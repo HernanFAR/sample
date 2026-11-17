@@ -1,0 +1,47 @@
+@page "/"
+@inject IHttpClientFactory Clients
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider Authentication
+
+<h1>Interactive Server cookie lab</h1>
+<p>Lab only. All credentials are synthetic.</p>
+<button id="baseline" @onclick="ProbeBaseline">Probe server HttpClient baseline</button>
+<button id="include" @onclick="ProbeInclude">Probe server HttpClient BrowserRequestCredentials.Include</button>
+<button id="circuit" @onclick="ProbeCircuit">Read existing circuit authentication state</button>
+<pre id="result">@result</pre>
+
+@code {
+    private string result = "not-run";
+
+    private Task ProbeBaseline() => ProbeHttp("baseline");
+    private Task ProbeInclude() => ProbeHttp("browser-credentials");
+
+    private async Task ProbeCircuit()
+    {
+        var state = await Authentication.GetAuthenticationStateAsync();
+        result = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            authenticated = state.User.Identity?.IsAuthenticated == true,
+            name = state.User.Identity?.Name
+        });
+    }
+
+    private async Task ProbeHttp(string name)
+    {
+        try
+        {
+            using var client = Clients.CreateClient(name);
+            var target = new Uri(new Uri(Navigation.BaseUri), "api/whoami");
+            using var response = await client.GetAsync(target);
+            result = await response.Content.ReadAsStringAsync();
+        }
+        catch (Exception error)
+        {
+            result = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                error = error.GetType().Name,
+                message = error.Message
+            });
+        }
+    }
+}

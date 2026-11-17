@@ -1,0 +1,44 @@
+name: Blazor Server cookie transport experiment
+on:
+  push:
+    branches: [experiment/blazor-server-cookie-handler]
+  workflow_dispatch:
+
+jobs:
+  browser-experiment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build lab
+        run: dotnet build CookieLab.csproj -c Release
+      - name: Install Playwright
+        working-directory: tests
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Start interactive-server lab
+        run: |
+          ASPNETCORE_URLS=http://127.0.0.1:5088 dotnet run --no-build -c Release --project CookieLab.csproj > /tmp/cookie-lab.log 2>&1 &
+          echo $! > /tmp/cookie-lab.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:5088/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/cookie-lab.log
+          exit 1
+      - name: Browser assertions
+        working-directory: tests
+        run: node browser.mjs
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cookie-lab-server-logs
+          path: /tmp/cookie-lab.log
