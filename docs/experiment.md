@@ -37,3 +37,14 @@ GitHub Actions executes automatically on the experiment branch and records an ex
 This isolates **transport** and circuit auth-state behavior. It does not implement Endorsment's captured-cookie delegation, account-side revocation, or a production-grade logout. The lab uses an intentionally GET-based logout endpoint for test simplicity; never copy that into production. It does not prove that a different custom handler/provider cannot forward browser credentials. It establishes what this particular browser-credentials option does under the server transport.
 
 A result must be read from an actual executed workflow, not inferred from code.
+
+## Extension: CookieContainer
+
+Two more .NET 8 server transports are exercised by real Chromium:
+
+1. `empty-cookie-container`: `HttpClientHandler.UseCookies=true` with a fresh server-side jar. Browser login does **not** populate it automatically.
+2. `shared-cookie-container`: a dedicated server-side jar is explicitly populated from an authenticated browser HTTP request via the **lab-only** `POST /lab/seed` endpoint. This shows forwarding works when a cookie is explicitly copied into the jar, while browser logout does not clear that independent jar.
+
+A second isolated browser context logs in as `other-user` and invokes the same shared jar. The test checks whether it reuses `lab-user`'s cookie, demonstrating why a singleton/shared `CookieContainer` is unsuitable for multi-user request delegation. No cookie contents are logged. The experiment deliberately shares the jar to reveal the risk and must not be copied into production.
+
+These tests **do not** mean `CookieContainer` cannot be used safely when properly scoped and managed. They show that it is not a live connection to browser cookies, and that revocation/isolation must be handled separately.

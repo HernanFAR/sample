@@ -7,6 +7,8 @@
 <p>Lab only. All credentials are synthetic.</p>
 <button id="baseline" @onclick="ProbeBaseline">Probe server HttpClient baseline</button>
 <button id="include" @onclick="ProbeInclude">Probe server HttpClient BrowserRequestCredentials.Include</button>
+<button id="emptyjar" @onclick="() => ProbeHttp(\"empty-cookie-container\")">Probe empty CookieContainer</button>
+<button id="sharedjar" @onclick="() => ProbeHttp(\"shared-cookie-container\")">Probe shared CookieContainer</button>
 <button id="circuit" @onclick="ProbeCircuit">Read existing circuit authentication state</button>
 <span id="ready">@(interactive ? "ready" : "starting")</span>
 <pre id="result">@result</pre>
