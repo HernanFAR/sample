@@ -36,6 +36,9 @@ jobs:
       - name: Browser assertions
         working-directory: tests
         run: node browser.mjs
+      - name: Print server logs on failure
+        if: failure()
+        run: cat /tmp/cookie-lab.log || true
       - name: Upload logs on failure
         if: failure()
         uses: actions/upload-artifact@v4

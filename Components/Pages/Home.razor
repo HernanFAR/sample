@@ -8,10 +8,21 @@
 <button id="baseline" @onclick="ProbeBaseline">Probe server HttpClient baseline</button>
 <button id="include" @onclick="ProbeInclude">Probe server HttpClient BrowserRequestCredentials.Include</button>
 <button id="circuit" @onclick="ProbeCircuit">Read existing circuit authentication state</button>
+<span id="ready">@(interactive ? "ready" : "starting")</span>
 <pre id="result">@result</pre>
 
 @code {
     private string result = "not-run";
+    private bool interactive;
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            interactive = true;
+            StateHasChanged();
+        }
+    }
 
     private Task ProbeBaseline() => ProbeHttp("baseline");
     private Task ProbeInclude() => ProbeHttp("browser-credentials");

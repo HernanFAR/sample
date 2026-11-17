@@ -5,6 +5,8 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext();
 const page = await context.newPage();
 const observations = {};
+page.on('console', message => console.log('BROWSER:', message.type(), message.text()));
+page.on('pageerror', error => console.log('PAGEERROR:', error.message));
 
 async function press(id) {
   await page.locator('#result').evaluate(node => node.textContent = 'not-run').catch(() => {});
@@ -12,7 +14,7 @@ async function press(id) {
   await page.waitForFunction(() => {
     const value = document.querySelector('#result')?.textContent?.trim();
     return value && value !== 'not-run';
-  }, { timeout: 20000 });
+  }, null, { timeout: 20000 });
   const value = await page.locator('#result').textContent();
   return JSON.parse(value.trim());
 }
@@ -24,6 +26,7 @@ function assert(condition, message) {
 try {
   await page.goto(origin + '/login');
   await page.locator('#include').waitFor();
+  await page.locator('#ready').getByText('ready').waitFor({timeout: 30000});
   observations.browserBeforeLogout = await page.evaluate(async () =>
     await (await fetch('/api/whoami', { credentials: 'include' })).json());
   observations.circuitBeforeLogout = await press('circuit');
@@ -56,6 +59,10 @@ try {
   assert(!observations.serverAfterLogout.authenticated, 'server Include unexpectedly authenticated');
   assert(!observations.freshNavigation.authenticated, 'new navigation unexpectedly authenticated');
   console.log(JSON.stringify({ status: 'PASS', observations }, null, 2));
+} catch (error) {
+  console.log('OBSERVATIONS_SO_FAR', JSON.stringify(observations));
+  console.log('PAGE_BODY', (await page.locator('body').innerText()).slice(0, 4000));
+  throw error;
 } finally {
   await browser.close();
 }
