@@ -9,12 +9,12 @@ page.on('console', message => console.log('BROWSER:', message.type(), message.te
 page.on('pageerror', error => console.log('PAGEERROR:', error.message));
 
 async function press(id) {
-  await page.locator('#result').evaluate(node => node.textContent = 'not-run').catch(() => {});
+  const before = await page.locator('#result').textContent();
   await page.locator('#' + id).click();
-  await page.waitForFunction(() => {
+  await page.waitForFunction((previous) => {
     const value = document.querySelector('#result')?.textContent?.trim();
-    return value && value !== 'not-run';
-  }, null, { timeout: 20000 });
+    return value && value !== 'not-run' && value !== previous;
+  }, before?.trim(), { timeout: 20000 });
   const value = await page.locator('#result').textContent();
   return JSON.parse(value.trim());
 }
