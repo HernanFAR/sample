@@ -7,15 +7,17 @@
 <p>Lab only. All credentials are synthetic.</p>
 <button id="baseline" @onclick="ProbeBaseline">Probe server HttpClient baseline</button>
 <button id="include" @onclick="ProbeInclude">Probe server HttpClient BrowserRequestCredentials.Include</button>
-<button id="emptyjar" @onclick="() => ProbeHttp(\"empty-cookie-container\")">Probe empty CookieContainer</button>
-<button id="sharedjar" @onclick="() => ProbeHttp(\"shared-cookie-container\")">Probe shared CookieContainer</button>
+<button id="emptyjar" @onclick="ProbeEmptyJar">Probe empty CookieContainer</button>
+<button id="sharedjar" @onclick="ProbeSharedJar">Probe shared CookieContainer</button>
 <button id="circuit" @onclick="ProbeCircuit">Read existing circuit authentication state</button>
 <span id="ready">@(interactive ? "ready" : "starting")</span>
+<span id="version">@version</span>
 <pre id="result">@result</pre>
 
 @code {
     private string result = "not-run";
     private bool interactive;
+    private int version;
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -28,6 +30,8 @@
 
     private Task ProbeBaseline() => ProbeHttp("baseline");
     private Task ProbeInclude() => ProbeHttp("browser-credentials");
+    private Task ProbeEmptyJar() => ProbeHttp("empty-cookie-container");
+    private Task ProbeSharedJar() => ProbeHttp("shared-cookie-container");
 
     private async Task ProbeCircuit()
     {
@@ -37,6 +41,7 @@
             authenticated = state.User.Identity?.IsAuthenticated == true,
             name = state.User.Identity?.Name
         });
+        version++;
     }
 
     private async Task ProbeHttp(string name)
@@ -47,6 +52,7 @@
             var target = new Uri(new Uri(Navigation.BaseUri), "api/whoami");
             using var response = await client.GetAsync(target);
             result = await response.Content.ReadAsStringAsync();
+            version++;
         }
         catch (Exception error)
         {
@@ -55,6 +61,7 @@
                 error = error.GetType().Name,
                 message = error.Message
             });
+            version++;
         }
     }
 }

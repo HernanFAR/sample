@@ -9,12 +9,11 @@ page.on('console', message => console.log('BROWSER:', message.type(), message.te
 page.on('pageerror', error => console.log('PAGEERROR:', error.message));
 
 async function press(id) {
-  const before = await page.locator('#result').textContent();
+  const before = Number(await page.locator('#version').textContent());
   await page.locator('#' + id).click();
-  await page.waitForFunction((previous) => {
-    const value = document.querySelector('#result')?.textContent?.trim();
-    return value && value !== 'not-run' && value !== previous;
-  }, before?.trim(), { timeout: 20000 });
+  await page.waitForFunction(previous =>
+    Number(document.querySelector('#version')?.textContent) > previous,
+    before, { timeout: 20000 });
   const value = await page.locator('#result').textContent();
   return JSON.parse(value.trim());
 }
@@ -84,12 +83,11 @@ try {
   observations.otherBrowser = await otherPage.evaluate(async () =>
     await (await fetch('/api/whoami', {credentials:'include'})).json());
   observations.sharedContainerViewedByOtherUser = await (async () => {
-    const before = await otherPage.locator('#result').textContent();
+    const before = Number(await otherPage.locator('#version').textContent());
     await otherPage.locator('#sharedjar').click();
-    await otherPage.waitForFunction(previous => {
-      const value = document.querySelector('#result')?.textContent?.trim();
-      return value && value !== 'not-run' && value !== previous;
-    }, before?.trim(), {timeout:20000});
+    await otherPage.waitForFunction(previous =>
+      Number(document.querySelector('#version')?.textContent) > previous,
+      before, {timeout:20000});
     return JSON.parse((await otherPage.locator('#result').textContent()).trim());
   })();
   assert(observations.otherBrowser.name === 'other-user', 'second browser identity was not established');
