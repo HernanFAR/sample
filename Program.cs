@@ -17,6 +17,8 @@ builder.Services.AddAuthentication("LabCookie").AddCookie("LabCookie", options =
 });
 builder.Services.AddAuthorization();
 builder.Services.AddTransient<IncludeBrowserCredentialsHandler>();
+builder.Services.AddScoped<CircuitScopedCookieClient>();
+builder.Services.AddScoped<Microsoft.AspNetCore.Components.Server.Circuits.CircuitHandler>(sp => sp.GetRequiredService<CircuitScopedCookieClient>());
 // LAB ONLY: deliberately shared server-side CookieContainer to measure lifetime/isolation hazards.
 builder.Services.AddSingleton(new CookieContainer());
 builder.Services.AddHttpClient("baseline")

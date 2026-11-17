@@ -2,6 +2,7 @@
 @inject IHttpClientFactory Clients
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider Authentication
+@inject CookieLab.Handlers.CircuitScopedCookieClient ScopedCookies
 
 <h1>Interactive Server cookie lab</h1>
 <p>Lab only. All credentials are synthetic.</p>
@@ -9,6 +10,7 @@
 <button id="include" @onclick="ProbeInclude">Probe server HttpClient BrowserRequestCredentials.Include</button>
 <button id="emptyjar" @onclick="ProbeEmptyJar">Probe empty CookieContainer</button>
 <button id="sharedjar" @onclick="ProbeSharedJar">Probe shared CookieContainer</button>
+<button id="scopedjar" @onclick="ProbeScopedJar">Probe scoped circuit CookieContainer</button>
 <button id="circuit" @onclick="ProbeCircuit">Read existing circuit authentication state</button>
 <span id="ready">@(interactive ? "ready" : "starting")</span>
 <span id="version">@version</span>
@@ -32,6 +34,20 @@
     private Task ProbeInclude() => ProbeHttp("browser-credentials");
     private Task ProbeEmptyJar() => ProbeHttp("empty-cookie-container");
     private Task ProbeSharedJar() => ProbeHttp("shared-cookie-container");
+
+    private async Task ProbeScopedJar()
+    {
+        try
+        {
+            var target = new Uri(new Uri(Navigation.BaseUri), "api/whoami");
+            result = await ScopedCookies.ProbeAsync(target);
+        }
+        catch (Exception error)
+        {
+            result = System.Text.Json.JsonSerializer.Serialize(new { error = error.GetType().Name, message = error.Message });
+        }
+        version++;
+    }
 
     private async Task ProbeCircuit()
     {

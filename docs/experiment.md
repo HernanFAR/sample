@@ -48,3 +48,9 @@ Two more .NET 8 server transports are exercised by real Chromium:
 A second isolated browser context logs in as `other-user` and invokes the same shared jar. The test checks whether it reuses `lab-user`'s cookie, demonstrating why a singleton/shared `CookieContainer` is unsuitable for multi-user request delegation. No cookie contents are logged. The experiment deliberately shares the jar to reveal the risk and must not be copied into production.
 
 These tests **do not** mean `CookieContainer` cannot be used safely when properly scoped and managed. They show that it is not a live connection to browser cookies, and that revocation/isolation must be handled separately.
+
+## Circuit-scoped CookieContainer experiment
+
+`CircuitScopedCookieClient` is registered as scoped and as a scoped `CircuitHandler` resolving the identical instance. It creates an exclusive `CookieContainer` and `HttpClientHandler` within the circuit scope, deliberately not using `IHttpClientFactory` handler pools. The lab copies its single authentication cookie from the authenticated SignalR connection during `OnConnectionUpAsync`.
+
+Playwright must demonstrate that user A and user B have distinct circuit scope IDs and can invoke the API as their respective identities, that two browser tabs have distinct circuit instances, and that opening user B doesn't contaminate user A. After user A logs out, its existing scoped jar may continue authenticating until expiry: this is a known security limitation, not revocation. No production-safe revocation mechanism is demonstrated.
